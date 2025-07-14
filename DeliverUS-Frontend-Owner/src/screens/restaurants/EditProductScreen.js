@@ -17,12 +17,14 @@ import { buildInitialValues } from '../Helper'
 import { getRestaurantSchedules } from '../../api/RestaurantEndpoints'
 
 export default function EditProductScreen ({ navigation, route }) {
+  const [isScheduleDropdownOpen, setIsScheduleDropdownOpen] = useState(false)
   const [open, setOpen] = useState(false)
   const [productCategories, setProductCategories] = useState([])
+  const [scheduleOptions, setScheduleOptions] = useState([])
   const [backendErrors, setBackendErrors] = useState()
   const [product, setProduct] = useState()
 
-  const [initialProductValues, setInitialProductValues] = useState({ name: null, description: null, price: null, order: null, productCategoryId: null, availability: null, image: null })
+  const [initialProductValues, setInitialProductValues] = useState({ name: null, description: null, price: null, order: null, productCategoryId: null, availability: null, image: null /* SOLUTION */, scheduleId: null })
   const validationSchema = yup.object().shape({
     name: yup
       .string()
@@ -43,8 +45,36 @@ export default function EditProductScreen ({ navigation, route }) {
       .number()
       .positive()
       .integer()
-      .required('Product category is required')
+      .required('Product category is required'), /* SOLUTION */
+    scheduleId: yup
+      .number()
+      .nullable()
+      .optional()
+      .positive()
   })
+
+  useEffect(() => {
+    async function fetchRestaurantSchedules () {
+      try {
+        const fetchedRestaurantSchedules = await getRestaurantSchedules(product.restaurantId)
+        const fetchedRestaurantSchedulesOptions = fetchedRestaurantSchedules.map((schedule) => {
+          return {
+            label: `${schedule.startTime} - ${schedule.endTime}`,
+            value: schedule.id
+          }
+        })
+        setScheduleOptions(fetchedRestaurantSchedulesOptions)
+      } catch (error) {
+        showMessage({
+          message: `There was an error while retrieving restaurant schedules. ${error} `,
+          type: 'error',
+          style: GlobalStyles.flashStyle,
+          titleStyle: GlobalStyles.flashTextStyle
+        })
+      }
+    }
+    if (product) { fetchRestaurantSchedules() }
+  }, [product])
 
   useEffect(() => {
     async function fetchProductCategories () {
@@ -163,6 +193,26 @@ export default function EditProductScreen ({ navigation, route }) {
                 dropDownStyle={{ backgroundColor: '#fafafa' }}
               />
               <ErrorMessage name={'productCategoryId'} render={msg => <TextError>{msg}</TextError> }/>
+
+                <TextRegular textStyle={styles.textLabel}>Schedule: </TextRegular>
+              <DropDownPicker
+                open={isScheduleDropdownOpen}
+                value={values.scheduleId}
+                items={[
+                  { label: 'Not scheduled', value: null },
+                  ...scheduleOptions
+                ]}
+                setOpen={setIsScheduleDropdownOpen}
+                onSelectItem={item => {
+                  setFieldValue('scheduleId', item.value)
+                }}
+                setItems={setScheduleOptions}
+                placeholder="Not scheduled"
+                containerStyle={{ height: 40, marginBottom: 10 }}
+                style={{ backgroundColor: GlobalStyles.brandBackground }}
+                dropDownStyle={{ backgroundColor: '#fafafa' }}
+              />
+              <ErrorMessage name={'scheduleId'} render={msg => <TextError>{msg}</TextError> }/>
 
               <TextRegular textStyle={styles.textLabel}>Available:</TextRegular>
               <Switch

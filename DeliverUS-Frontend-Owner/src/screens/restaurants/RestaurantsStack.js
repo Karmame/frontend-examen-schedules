@@ -22,6 +22,12 @@ export default function RestaurantsStack () {
           title: 'My Restaurants'
         }} />
       <Stack.Screen
+        name='EditScheduleScreen'
+        component={EditScheduleScreen}
+        options={{
+          title: 'Edit Schedule'
+        }} />
+      <Stack.Screen
         name='RestaurantDetailScreen'
         component={RestaurantDetailScreen}
         options={{
